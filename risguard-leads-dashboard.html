@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Risguard — Lead-sourcing dashboard</title>
+<style>
+  :root{
+    --bg:#0f1729; --panel:#16203a; --panel2:#1d294a; --line:#2a3b63;
+    --text:#e8edf7; --muted:#93a3c4; --accent:#3da5ff; --accent2:#2d7cd6;
+    --green:#2fbf71; --amber:#f5a623; --red:#e3506b; --chip:#243457;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--text);font-size:14px;line-height:1.45}
+  header{padding:20px 26px;border-bottom:1px solid var(--line);background:var(--panel);
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  header h1{font-size:19px;margin:0;font-weight:650}
+  header .sub{color:var(--muted);font-size:12.5px;margin-top:3px}
+  .wrap{padding:18px 26px 60px}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  select,input[type=text]{background:var(--panel2);color:var(--text);border:1px solid var(--line);
+    border-radius:8px;padding:8px 11px;font-size:13px;outline:none}
+  input[type=text]{min-width:220px}
+  .btn{background:var(--accent2);color:#fff;border:none;border-radius:8px;padding:9px 14px;
+    font-size:13px;font-weight:600;cursor:pointer}
+  .btn.ghost{background:var(--chip);color:var(--text)}
+  .stats{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;min-width:120px}
+  .stat .n{font-size:22px;font-weight:700}
+  .stat .l{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em}
+  table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:12px;overflow:hidden}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);cursor:pointer;user-select:none;white-space:nowrap}
+  th:hover{color:var(--text)}
+  tr:last-child td{border-bottom:none}
+  tr.row:hover{background:var(--panel2)}
+  .title{font-weight:600}
+  .title a{color:var(--text);text-decoration:none}
+  .title a:hover{color:var(--accent)}
+  .meta{color:var(--muted);font-size:12px;margin-top:3px}
+  .score{font-weight:700;font-size:15px;border-radius:8px;padding:3px 9px;display:inline-block;min-width:34px;text-align:center}
+  .s-hi{background:rgba(47,191,113,.16);color:#5fe39a}
+  .s-md{background:rgba(245,166,35,.16);color:#ffc56b}
+  .s-lo{background:rgba(227,80,107,.14);color:#ff8aa0}
+  .chip{display:inline-block;background:var(--chip);border:1px solid var(--line);border-radius:20px;
+    padding:2px 9px;font-size:11px;color:var(--muted);margin:2px 4px 0 0}
+  .statusSel{font-size:12px;padding:5px 8px}
+  .reden{color:var(--muted);font-size:12px;margin-top:5px;max-width:420px}
+  .src{font-size:11px;color:var(--muted)}
+  .verify{color:var(--amber);font-size:11px;font-weight:600}
+  footer{color:var(--muted);font-size:11.5px;padding:0 26px 30px}
+  .hidden{display:none}
+  details summary{cursor:pointer;color:var(--accent);font-size:12px;margin-top:4px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Risguard — Geautomatiseerd lead-sourcing dashboard</h1>
+    <div class="sub">Regio-scope: Zeeland, Zuid-Holland, Noord-Holland, Utrecht, Noord-Brabant, Gelderland • laatste run 29 juni 2026 (12:10)</div>
+  </div>
+  <div>
+    <button class="btn ghost" onclick="exportCSV()">Export CSV</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="stats" id="stats"></div>
+
+  <div class="toolbar">
+    <input type="text" id="q" placeholder="Zoek op titel, opdrachtgever, trefwoord…" oninput="render()">
+    <select id="fScore" onchange="render()">
+      <option value="0">Alle scores</option>
+      <option value="75">Score ≥ 75 (sterk)</option>
+      <option value="50">Score ≥ 50</option>
+    </select>
+    <select id="fRegio" onchange="render()"></select>
+    <select id="fRol" onchange="render()"></select>
+    <select id="fStatus" onchange="render()">
+      <option value="">Alle statussen</option>
+      <option>nieuw</option><option>bekeken</option><option>benaderd</option>
+      <option>afgewezen</option><option>gewonnen</option>
+    </select>
+    <select id="fBron" onchange="render()"></select>
+    <button class="btn ghost" onclick="resetF()">Reset</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th onclick="sortBy('score')">Score ▼</th>
+        <th onclick="sortBy('titel')">Opdracht</th>
+        <th onclick="sortBy('opdrachtgever')">Opdrachtgever / bureau</th>
+        <th onclick="sortBy('locatie')">Locatie</th>
+        <th onclick="sortBy('tarief')">Tarief</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<footer>
+  Regio-filter actief: alleen Zeeland, Zuid-Holland, Noord-Holland, Utrecht, Noord-Brabant en Gelderland. Opdrachten buiten deze provincies worden uitgefilterd.<br>
+  Bronnen: it-contracts, freep, opdrachtoverheid, Circle8, Seven Stars, FixedToday (Flextender indirect via Opdracht Overheid).
+  Leads met <span class="verify">⚠ te verifiëren</span> komen uit zoekresultaten en moeten op open status gecontroleerd worden.
+  Statuswijzigingen worden lokaal in je browser bewaard.<br>
+  Gesloten opdrachten (deadline vóór vandaag) worden niet getoond en bij elke run uit de lijst verwijderd; een opdracht die vandaag sluit telt nog als open. De deadline staat bij elke opdracht vermeld.
+</footer>
+
+<script>
+const LEADS = [
+ {id:"politie-secofficer", titel:"Security Officer", rol:"Security Officer", opdrachtgever:"Politie", bureau:"Harvey Nash", locatie:"Driebergen / Utrechtse Heuvelrug", regio:"Utrecht", tarief:"richttarief €108", duur:"24 maanden", uren:"36", zzp:"alleen detachering", bron:"IT-Contracts", url:"https://www.it-contracts.nl/vacature_Security_officer__287563/search/Chief+Information+Security+Officer+%28CISO%29/from/0", geplaatst:"jun 2026", score:76, verify:false, reden:"Security officer-rol, governance-georienteerd, goed tarief. Alleen detachering (geen ZZP).", oms:"Security officer bij de politie, start 01-09-2026 na screening, 24 maanden, volledig op locatie Driebergen."},
+ {id:"amsterdam-compliance", titel:"Compliance Officer Privacy en Security", rol:"Compliance Officer", opdrachtgever:"Gemeente Amsterdam", bureau:"ICQ Groep", locatie:"Amsterdam", regio:"Noord-Holland", tarief:"marktconform", duur:"6 maanden", uren:"-", zzp:"alleen detachering", bron:"IT-Contracts", url:"https://www.it-contracts.nl/vacature_Compliance_Officer_Privacy_en_Security_287501/search/Security/from/0", geplaatst:"jun 2026", score:72, verify:false, reden:"Compliance + privacy + security, AVG-raakvlak. Past op GRC/compliance-tak Risguard.", oms:"Compliance Officer Privacy en Security bij Toezicht & Handhaving Openbare Ruimte, gemeente Amsterdam. Alleen via detachering (wDBA)."},
+ {id:"defensie-beveiligingsfunctionaris", titel:"Beveiligingsfunctionaris (security beleidskader)", rol:"Security governance", opdrachtgever:"Ministerie van Defensie (Maritieme IT)", bureau:"detacheerder", locatie:"Den Helder", regio:"Noord-Holland", tarief:"marktconform", duur:"12 maanden", uren:"-", zzp:"detachering", bron:"IT-Contracts", url:"https://www.it-contracts.nl/vacature_Beveiligingsfunctionaris_287511/search/Security/from/0", geplaatst:"jun 2026", score:70, verify:false, reden:"Beveiligingsbeleidskader, beleidsregels, beheersmaatregelen, beveiligingshandboek = security governance. Sterke inhoudelijke match.", oms:"Ontwikkelen/onderhouden van Maritieme IT beveiligingsbeleidskader, beleidsregels en beveiligingshandboek; periodiek testen van beheersmaatregelen."},
+ {id:"defensie-cyber", titel:"Senior ICT specialist (Cyber/Security)", rol:"Cybersecurity", opdrachtgever:"Ministerie van Defensie (Maritieme IT)", bureau:"detacheerder", locatie:"Den Helder", regio:"Noord-Holland", tarief:"marktconform", duur:"12 maanden", uren:"-", zzp:"detachering", bron:"IT-Contracts", url:"https://www.it-contracts.nl/vacature_Senior_ICT_specialist_%28CyberSecurity%29__287518/search/Security/from/0", geplaatst:"jun 2026", score:52, verify:false, reden:"Cybersecurity-focus maar technisch/operationeel (infra), minder governance/ISO. Gedeeltelijke match.", oms:"Senior ICT-specialist cybersecurity in software-ontwikkelteam Maritieme IT."},
+ {id:"defensie-secontwerper", titel:"Security Ontwerper", rol:"Security engineering", opdrachtgever:"Ministerie van Defensie (Maritieme IT)", bureau:"detacheerder", locatie:"Den Helder", regio:"Noord-Holland", tarief:"marktconform", duur:"12 maanden", uren:"-", zzp:"detachering", bron:"IT-Contracts", url:"https://www.it-contracts.nl/vacature_Security_Ontwerper_287517/search/Security/from/0", geplaatst:"jun 2026", score:48, verify:false, reden:"Information security maar technisch ontwerp, niet GRC/audit/ISO-implementatie. Gedeeltelijke match.", oms:"Senior Security Ontwerper, aandachtsgebied Information Security, Maritieme IT."},
+ {id:"delft-architect", titel:"IT/Werkplek Architect (security/privacy/compliance)", rol:"Architect", opdrachtgever:"Gemeente Delft", bureau:"detacheerder", locatie:"Delft", regio:"Zuid-Holland", tarief:"marktconform", duur:"10 maanden", uren:"-", zzp:"detachering", bron:"IT-Contracts", url:"https://www.it-contracts.nl/vacature_ITWerkplek_Architect__287488/search/Security/from/0", geplaatst:"jun 2026", score:40, verify:false, reden:"Architectuurrol met security-, privacy- en compliance-eisen, maar zwaartepunt werkplekarchitectuur. Randdomein.", oms:"IT/werkplek-architect die security-, privacy- en compliance-eisen borgt in de digitale werkplek."},
+ {id:"vru-coordinator-datasecurity-dlp", titel:"Coordinator datasecurity & DLP", rol:"Security/Compliance officer (kwartiermaker CISO-team)", opdrachtgever:"Veiligheidsregio Utrecht (VRU)", bureau:"KBenP (Opdracht Overheid)", locatie:"Utrecht", regio:"Utrecht", tarief:"max €127 p/u", duur:"z.s.m. start, einddatum n.t.b. + optie 3 mnd", uren:"28-36", zzp:"ZZP mogelijk (freelance & loondienst)", bron:"Opdracht Overheid", url:"https://www.opdrachtoverheid.nl/inhuuropdracht/veiligheidsregio-utrecht/coordinator-datasecurity-dlp/AA5D2DC9-9DE9-4747-93EF-D36B4669673B", geplaatst:"2026-06-22", deadline:"2026-06-29", score:80, verify:false, reden:"Kwartiermaker datasecurity & compliance binnen het CISO-team; beleid/kaders voor dataclassificatie, gegevensbescherming en DLP, BIO2-naleving en aantoonbaar toezicht = sterke GRC/informatiebeveiligings-match (kernprofiel Risguard). Deels hands-on technisch (Microsoft Purview/DLP/CASB), maar zwaartepunt governance/compliance (70% security, 30% compliance/aantoonbaarheid). ZZP mogelijk. Deadline 29-6-2026 (open).", oms:"Tijdelijke kwartiermaker die het fundament legt voor de structurele rol Coordinator Gegevensbeveiliging en Naleving binnen Team CISO van de VRU: dataclassificatie, gegevensbescherming, DLP (Microsoft Purview/CASB), procedures en toezicht conform BIO2."},
+ {id:"nbrabant-adviseur-cyber-ict-continuiteit", titel:"Senior Adviseur Cyber, ICT Continuiteit & Applicatie afhankelijkheden", rol:"Security/Risk advisor (BCM)", opdrachtgever:"Provincie Noord-Brabant", bureau:"KBenP (Opdracht Overheid)", locatie:"'s-Hertogenbosch", regio:"Noord-Brabant", tarief:"max €125 p/u", duur:"6 maanden (01-09-2026 t/m 28-02-2027)", uren:"32", zzp:"ZZP mogelijk (freelance & loondienst)", bron:"Opdracht Overheid", url:"https://www.opdrachtoverheid.nl/inhuuropdracht/provincie-noord-brabant/senior-adviseur-cyber-ict-continuiteit-applicatie-afhankelijkheden/7EF4FDB5-22E7-4C17-B562-77CCEA392759", geplaatst:"2026-06-17", deadline:"2026-06-29", score:75, verify:false, reden:"Senior adviesrol op het snijvlak van cyber/ICT-continuiteit, BCM (ISO 22301) en bestuurlijke advisering; risico-/impactanalyses (AVG/NIS/BIO), BIA's, governance en borging. Sterke GRC/risicomanagement-match. Zwaartepunt BCM/continuiteit en ICT-architectuur i.p.v. zuivere ISO 27001-implementatie. ZZP mogelijk. Deadline 29-6-2026 (open).", oms:"Cyber- en ICT-uitval structureel borgen binnen Business Continuity Management en de crisisorganisatie; applicatie-afhankelijkheden en BIA's in kaart brengen (AVG/NIS/BIO), BCP's opstellen en adviseren over governance, borging en overdracht."},
+ {id:"sevenstars-bcm-rce-ocw", titel:"BCM Consultant (Business Continuity Management)", rol:"BCM / Risk & Continuity consultant", opdrachtgever:"Rijksdienst voor het Cultureel Erfgoed (RCE) / OCW", bureau:"Seven Stars (Circle8 Group)", locatie:"Amersfoort", regio:"Utrecht", tarief:"BBRA schaal 12 (all-in uurtarief excl. btw, n.t.b.)", duur:"5 maanden", uren:"36", zzp:"ZZP mogelijk", bron:"Seven Stars", url:"https://www.sevenstars.nl/opdracht/bcmconsultant_7S-004633", geplaatst:"jun 2026", deadline:"2026-07-06", score:66, verify:false, reden:"BCM-consultant bij RCE (OCW-breed): BIA's, risicoanalyses, PDCA-cyclus, standaardisatie SCP/BCP/DRP, kennis van BIO2 en ISO 22301, digitale weerbaarheid en awareness/(tafel)oefeningen. Sterke GRC/risicomanagement-/continuiteitsmatch (kernprofiel Risguard). Zwaartepunt BCM/continuiteit i.p.v. zuivere ISO 27001-implementatie, daarom net onder de hoogste band. ZZP mogelijk, regio Utrecht (Amersfoort).", oms:"RCE zoekt een BCM-consultant om de continuiteitsaanpak OCW-breed te standaardiseren: templates voor SCP/BCP/DRP opstellen en invullen voor min. 3 applicaties, BIA's en risicoanalyses uitvoeren, PDCA-cyclus inrichten, eigenaarschap/rollen beleggen, monitoring/rapportage opzetten en awareness/(tafel)oefeningen begeleiden conform BIO2/ISO 22301. 36 u/wk, 5 mnd, deadline 06-07-2026."},
+ {id:"vng-senior-incidenthandler", titel:"Senior Incidenthandler", rol:"Security incident response (CSIRT/SOC)", opdrachtgever:"VNG (Vereniging van Nederlandse Gemeenten)", bureau:"ICQ Groep", locatie:"Den Haag (hybride)", regio:"Zuid-Holland", tarief:"max €102 p/u", duur:"4 maanden", uren:"24-36", zzp:"alleen detachering (wDBA) / loondienst", bron:"IT-Contracts", url:"https://www.it-contracts.nl/vacature_Senior_Incidenthandler_287585/search/Chief+Information+Security+Officer+%28CISO%29/from/0", geplaatst:"jun 2026", score:50, verify:false, reden:"Senior incidenthandler bij VNG voor het afhandelen van beveiligingsincidenten (vermoedelijk CSIRT/IBD-context; eindklant VNG expliciet genoemd). Operationele informatiebeveiliging binnen security-domein en in-regio (Den Haag, Zuid-Holland), maar technisch/operationeel i.p.v. GRC/ISO-/auditgovernance. Alleen detachering (wDBA). Gedeeltelijke match, net boven drempel. NB: ook gepubliceerd op Opdracht Overheid (VNGR-26.127, tarief max €102 p/u, 24-36 u/wk, loondienst) - zelfde opdracht, niet apart toegevoegd.", oms:"VNG zoekt een Senior Incidenthandler voor het uitvoeren van incidentafhandeling van beveiligingsincidenten; in het kader van de wDBA alleen op basis van detachering, 4 maanden, standplaats Den Haag (hybride)."},
+ {id:"fixedtoday-iam-specialist-openftv", titel:"Senior Go Developer / IAM Specialist (OpenFTV)", rol:"IAM Specialist / Developer", opdrachtgever:"Onbekend (OpenFTV-project)", bureau:"FixedToday (Circle8 Group)", locatie:"Den Haag", regio:"Zuid-Holland", tarief:"onbekend", duur:"6 maanden + optie tot verlenging", uren:"36", zzp:"ZZP mogelijk", bron:"FixedToday", url:"https://www.fixedtoday.nl/vacature/senior-go-developer-%2F-iam-specialist-(openftv)_FT-007033", geplaatst:"jun 2026", deadline:"2026-07-01", score:45, verify:true, reden:"Technische IAM/identity-rol (security-adjacent), valt in band technisch security. Primair Go-development met IAM-specialisatie, daarom lagere prioriteit. Eindklant niet in advertentie vermeld; 'OpenFTV' wijst op een federatief identity/toegangsproject (voorbehoud, niet geverifieerd). Zuid-Holland (Den Haag), ZZP mogelijk.", oms:"Senior Go Developer met IAM-specialisatie voor het OpenFTV-project: ontwikkeling rond identity & access management / federatieve toegang. 36 u/wk, Den Haag, 6 mnd + optie."},
+ {id:"bhunted-sap-security-autorisatie", titel:"Interim Senior SAP Security & Autorisatie Consultant S/4HANA", rol:"SAP Security / Autorisatie Consultant", opdrachtgever:"Niet vermeld (via B-HUNTED)", bureau:"B-HUNTED", locatie:"Utrecht / hybride", regio:"Utrecht", tarief:"onbekend", duur:"12 maanden + optie tot verlenging", uren:"36", zzp:"ZZP inzet mogelijk", bron:"B-HUNTED", url:"https://www.b-hunted.nl/opdrachten/interim-senior-sap-security-autorisatie-consultant-s-4hana-zzp-utrecht-hybride/", geplaatst:"jun 2026", score:45, verify:true, reden:"SAP Security & Autorisatie (S/4HANA) is access-governance / autorisatiebeheer met raakvlak IT-audit en functiescheiding (SoD); valt in band technisch security (40-55). Adjacent aan Risguard-kern (ISO/NIS2/GRC) maar geen zuivere governance/ISO-implementatierol, daarom 45. Regio Utrecht, ZZP mogelijk. Eindklant niet vermeld in advertentie (niet geverifieerd). Nog steeds actueel op B-HUNTED in deze run (29-6); detail-URL nu bekend.", oms:"Interim Senior SAP Security & Autorisatie Consultant voor een S/4HANA-omgeving: inrichten en beheren van SAP-autorisaties/rollen en toegangsbeveiliging. Utrecht/hybride, 36 u/wk, 12 maanden + optie, ZZP-inzet mogelijk."}
+];
+
+const STORE='risguard_leads_v1';
+let state = loadState();
+let sortKey='score', sortDir=-1;
+
+function loadState(){
+  try{const s=JSON.parse(localStorage.getItem(STORE)); return s||{};}catch(e){return {};}
+}
+function saveState(){
+  try{localStorage.setItem(STORE,JSON.stringify(state));}catch(e){}
+}
+function setStatus(id,v){ state[id]=state[id]||{}; state[id].status=v; saveState(); render(); }
+
+function scoreClass(s){return s>=70?'s-hi':s>=45?'s-md':'s-lo';}
+
+// --- Deadline-afhandeling ---
+// Een opdracht is 'gesloten' zodra de deadline VÓÓR vandaag ligt.
+// Deadline = vandaag telt nog als open. Onbekende deadline blijft staan.
+function today0(){const d=new Date();d.setHours(0,0,0,0);return d;}
+function isClosed(l){ if(!l.deadline) return false; const d=new Date(l.deadline+'T00:00:00'); return !isNaN(d) && d < today0(); }
+function fmtDate(s){ if(!s) return ''; const p=s.split('-'); return p.length===3?`${p[2]}-${p[1]}-${p[0]}`:s; }
+// Actieve leads = alles behalve gesloten (gesloten opdrachten worden niet getoond).
+function active(){ return LEADS.filter(l=>!isClosed(l)); }
+
+function fillFilter(id,key,label){
+  const sel=document.getElementById(id);
+  const vals=[...new Set(active().map(l=>l[key]))].sort();
+  sel.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option>${v}</option>`).join('');
+}
+
+function current(){
+  const q=document.getElementById('q').value.toLowerCase();
+  const ms=+document.getElementById('fScore').value;
+  const fr=document.getElementById('fRegio').value;
+  const fro=document.getElementById('fRol').value;
+  const fst=document.getElementById('fStatus').value;
+  const fb=document.getElementById('fBron').value;
+  let rows=LEADS.filter(l=>{
+    if(isClosed(l)) return false;
+    const st=(state[l.id]&&state[l.id].status)||'nieuw';
+    if(q && !(l.titel+l.opdrachtgever+l.oms+l.reden+l.rol).toLowerCase().includes(q)) return false;
+    if(l.score<ms) return false;
+    if(fr && l.regio!==fr) return false;
+    if(fro && l.rol!==fro) return false;
+    if(fst && st!==fst) return false;
+    if(fb && l.bron!==fb) return false;
+    return true;
+  });
+  rows.sort((a,b)=>{
+    let x=a[sortKey],y=b[sortKey];
+    if(typeof x==='string'){x=x.toLowerCase();y=y.toLowerCase();}
+    return x<y?-1*sortDir:x>y?1*sortDir:0;
+  });
+  return rows;
+}
+
+function render(){
+  const rows=current();
+  const tb=document.getElementById('tbody');
+  tb.innerHTML=rows.map(l=>{
+    const st=(state[l.id]&&state[l.id].status)||'nieuw';
+    const opts=['nieuw','bekeken','benaderd','afgewezen','gewonnen']
+      .map(o=>`<option ${o===st?'selected':''}>${o}</option>`).join('');
+    return `<tr class="row">
+      <td><span class="score ${scoreClass(l.score)}">${l.score}</span></td>
+      <td>
+        <div class="title"><a href="${l.url}" target="_blank">${l.titel}</a></div>
+        <div class="meta">${l.rol} • ${l.uren&&l.uren!=='-'?l.uren+' u/wk • ':''}${l.duur} • ${l.zzp}${l.deadline?' • deadline '+fmtDate(l.deadline):''}</div>
+        ${l.verify?'<span class="verify">⚠ status te verifiëren</span>':''}
+        <details><summary>waarom past dit?</summary>
+          <div class="reden"><b>Score-onderbouwing:</b> ${l.reden}<br><br>${l.oms}</div>
+        </details>
+      </td>
+      <td>${l.opdrachtgever}<div class="src">via ${l.bureau} • bron: ${l.bron}</div></td>
+      <td>${l.locatie}<div class="src">${l.regio}</div></td>
+      <td>${l.tarief}</td>
+      <td><select class="statusSel" onchange="setStatus('${l.id}',this.value)">${opts}</select></td>
+    </tr>`;
+  }).join('');
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="6" style="color:var(--muted);padding:22px">Geen opdrachten gevonden met de huidige filters.</td></tr>'; }
+  renderStats(rows);
+}
+
+function renderStats(rows){
+  const all=active();
+  const strong=all.filter(l=>l.score>=75).length;
+  const won=all.filter(l=>(((state[l.id]&&state[l.id].status)||'nieuw')==='gewonnen')).length;
+  document.getElementById('stats').innerHTML=[
+    ['Actieve leads',all.length],
+    ['Getoond (na filter)',rows.length],
+    ['Sterke matches (≥75)',strong],
+    ['Gewonnen',won]
+  ].map(s=>`<div class="stat"><div class="n">${s[1]}</div><div class="l">${s[0]}</div></div>`).join('');
+}
+
+function sortBy(k){
+  if(sortKey===k){ sortDir*=-1; } else { sortKey=k; sortDir=(k==='score')?-1:1; }
+  document.querySelectorAll('th').forEach(th=>{
+    th.textContent=th.textContent.replace(/ [▲▼]$/,'');
+    const oc=th.getAttribute('onclick');
+    if(oc && oc.includes("'"+k+"'")) th.textContent += (sortDir<0?' ▼':' ▲');
+  });
+  render();
+}
+
+function resetF(){
+  document.getElementById('q').value='';
+  document.getElementById('fScore').value='0';
+  ['fRegio','fRol','fStatus','fBron'].forEach(id=>document.getElementById(id).value='');
+  render();
+}
+
+function exportCSV(){
+  const rows=current();
+  const cols=['score','titel','rol','opdrachtgever','bureau','locatie','regio','tarief','duur','uren','zzp','bron','deadline','url'];
+  const esc=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const csv=[cols.join(';')].concat(rows.map(l=>cols.map(c=>esc(l[c])).join(';'))).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='risguard-leads.csv'; a.click();
+}
+
+fillFilter('fRegio','regio',"Alle regio's");
+fillFilter('fRol','rol','Alle rollen');
+fillFilter('fBron','bron','Alle bronnen');
+render();
+</script>
+</body>
+</html>
