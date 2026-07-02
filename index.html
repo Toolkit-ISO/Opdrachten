@@ -52,6 +52,7 @@
   footer{color:var(--muted);font-size:11.5px;padding:0 26px 30px}
   .hidden{display:none}
   details summary{cursor:pointer;color:var(--accent);font-size:12px;margin-top:4px}
+  /* --- Inlogpoort (client-side, niet-beveiligd: schrikt casual inzage af) --- */
   #gate{position:fixed;inset:0;z-index:9999;background:var(--bg);
     display:flex;align-items:center;justify-content:center;padding:20px}
   #gate .box{background:var(--panel);border:1px solid var(--line);border-radius:14px;
@@ -69,7 +70,7 @@
 <body class="locked">
 <div id="gate">
   <div class="box">
-    <h2>Risguard Lead-dashboard</h2>
+    <h2>Login</h2>
     <p>Voer het wachtwoord in om de leads te bekijken.</p>
     <input type="password" id="gatePw" placeholder="Wachtwoord" autocomplete="current-password"
       onkeydown="if(event.key==='Enter')tryUnlock()">
@@ -86,8 +87,10 @@
     <button class="btn ghost" onclick="exportCSV()">Export CSV</button>
   </div>
 </header>
+
 <div class="wrap">
   <div class="stats" id="stats"></div>
+
   <div class="toolbar">
     <input type="text" id="q" placeholder="Zoek op titel, opdrachtgever, trefwoord…" oninput="render()">
     <select id="fScore" onchange="render()">
@@ -105,6 +108,7 @@
     <select id="fBron" onchange="render()"></select>
     <button class="btn ghost" onclick="resetF()">Reset</button>
   </div>
+
   <table>
     <thead>
       <tr>
@@ -119,6 +123,7 @@
     <tbody id="tbody"></tbody>
   </table>
 </div>
+
 <footer>
   Regio-filter actief: alleen Zeeland, Zuid-Holland, Noord-Holland, Utrecht, Noord-Brabant en Gelderland. Opdrachten buiten deze provincies worden uitgefilterd.<br>
   Bronnen: it-contracts, freep, opdrachtoverheid, Circle8, Seven Stars, FixedToday (Flextender indirect via Opdracht Overheid).
@@ -126,9 +131,14 @@
   Statuswijzigingen worden lokaal in je browser bewaard.<br>
   Gesloten opdrachten (deadline vóór vandaag) worden niet getoond en bij elke run uit de lijst verwijderd; een opdracht die vandaag sluit telt nog als open. De deadline staat bij elke opdracht vermeld.
 </footer>
+
 <script>
 /* ============================================================
    INLOGPOORT (simpel, client-side)
+   LET OP: dit is GEEN echte beveiliging. Wachtwoord-hash en alle
+   data staan in dit bestand en zijn leesbaar via 'view source'.
+   Het weert alleen casual meekijken.
+
    Wachtwoord wijzigen: kies een nieuw wachtwoord, bereken de
    cyrb53-hash ervan en zet die hieronder bij PW_HASH.
    (Standaardwachtwoord hieronder = "Risguard2026")
@@ -167,3 +177,132 @@ const LEADS = [
  {id:"tenderned-surf-cumulus-privacy-infobeveiliging", titel:"SURF Cumulus Professional Services (privacy/informatiebeveiliging cloud)", rol:"Privacy / Informatiebeveiliging advies (cloud)", opdrachtgever:"SURF", bureau:"-", locatie:"Utrecht", regio:"Utrecht", tarief:"onbekend", duur:"onbekend", uren:"-", zzp:"onbekend", bron:"TenderNed", url:"https://www.tenderned.nl/aankondigingen/overzicht/406331", geplaatst:"onbekend", deadline:"2026-12-22", score:60, verify:true, reden:"Professional services rond privacy en informatiebeveiliging in cloudcontext (SURF Cumulus) - relevante adviesmatch. Regio Utrecht, deadline 22-12-2026.", oms:"SURF vraagt professional services uit binnen het Cumulus-programma op het gebied van privacy en informatiebeveiliging in de cloud."},
  {id:"tenderned-radboud-continuity-das", titel:"DAS Continuity Management & Disaster Recovery", rol:"BCM / Continuity management (DAS)", opdrachtgever:"Radboud Universiteit", bureau:"-", locatie:"Nijmegen", regio:"Gelderland", tarief:"onbekend", duur:"doorlopend (DAS)", uren:"-", zzp:"onbekend", bron:"TenderNed", url:"https://www.tenderned.nl/aankondigingen/overzicht/430418", geplaatst:"onbekend", deadline:"2034-06-25", score:55, verify:true, reden:"DAS-perceel Continuity Management & Disaster Recovery bij Radboud Universiteit - BCM/risicomanagementmatch, doorlopend open. Regio Gelderland.", oms:"DAS-perceel van Radboud Universiteit voor continuity management en disaster recovery diensten."}
 ];
+
+const STORE='risguard_leads_v1';
+let state = loadState();
+let sortKey='score', sortDir=-1;
+
+function loadState(){
+  try{const s=JSON.parse(localStorage.getItem(STORE)); return s||{};}catch(e){return {};}
+}
+function saveState(){
+  try{localStorage.setItem(STORE,JSON.stringify(state));}catch(e){}
+}
+function setStatus(id,v){ state[id]=state[id]||{}; state[id].status=v; saveState(); render(); }
+
+function scoreClass(s){return s>=70?'s-hi':s>=45?'s-md':'s-lo';}
+
+// --- Deadline-afhandeling ---
+// Een opdracht is 'gesloten' zodra de deadline VÓÓR vandaag ligt.
+// Deadline = vandaag telt nog als open. Onbekende deadline blijft staan.
+function today0(){const d=new Date();d.setHours(0,0,0,0);return d;}
+function isClosed(l){ if(!l.deadline) return false; const d=new Date(l.deadline+'T00:00:00'); return !isNaN(d) && d < today0(); }
+function fmtDate(s){ if(!s) return ''; const p=s.split('-'); return p.length===3?`${p[2]}-${p[1]}-${p[0]}`:s; }
+// Actieve leads = alles behalve gesloten (gesloten opdrachten worden niet getoond).
+function active(){ return LEADS.filter(l=>!isClosed(l)); }
+
+function fillFilter(id,key,label){
+  const sel=document.getElementById(id);
+  const vals=[...new Set(active().map(l=>l[key]))].sort();
+  sel.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option>${v}</option>`).join('');
+}
+
+function current(){
+  const q=document.getElementById('q').value.toLowerCase();
+  const ms=+document.getElementById('fScore').value;
+  const fr=document.getElementById('fRegio').value;
+  const fro=document.getElementById('fRol').value;
+  const fst=document.getElementById('fStatus').value;
+  const fb=document.getElementById('fBron').value;
+  let rows=LEADS.filter(l=>{
+    if(isClosed(l)) return false;
+    const st=(state[l.id]&&state[l.id].status)||'nieuw';
+    if(q && !(l.titel+l.opdrachtgever+l.oms+l.reden+l.rol).toLowerCase().includes(q)) return false;
+    if(l.score<ms) return false;
+    if(fr && l.regio!==fr) return false;
+    if(fro && l.rol!==fro) return false;
+    if(fst && st!==fst) return false;
+    if(fb && l.bron!==fb) return false;
+    return true;
+  });
+  rows.sort((a,b)=>{
+    let x=a[sortKey],y=b[sortKey];
+    if(typeof x==='string'){x=x.toLowerCase();y=y.toLowerCase();}
+    return x<y?-1*sortDir:x>y?1*sortDir:0;
+  });
+  return rows;
+}
+
+function render(){
+  const rows=current();
+  const tb=document.getElementById('tbody');
+  tb.innerHTML=rows.map(l=>{
+    const st=(state[l.id]&&state[l.id].status)||'nieuw';
+    const opts=['nieuw','bekeken','benaderd','afgewezen','gewonnen']
+      .map(o=>`<option ${o===st?'selected':''}>${o}</option>`).join('');
+    return `<tr class="row">
+      <td><span class="score ${scoreClass(l.score)}">${l.score}</span></td>
+      <td>
+        <div class="title"><a href="${l.url}" target="_blank">${l.titel}</a></div>
+        <div class="meta">${l.rol} • ${l.uren&&l.uren!=='-'?l.uren+' u/wk • ':''}${l.duur} • ${l.zzp}${l.deadline?' • deadline '+fmtDate(l.deadline):''}</div>
+        ${l.verify?'<span class="verify">⚠ status te verifiëren</span>':''}
+        <details><summary>waarom past dit?</summary>
+          <div class="reden"><b>Score-onderbouwing:</b> ${l.reden}<br><br>${l.oms}</div>
+        </details>
+      </td>
+      <td>${l.opdrachtgever}<div class="src">via ${l.bureau} • bron: ${l.bron}</div></td>
+      <td>${l.locatie}<div class="src">${l.regio}</div></td>
+      <td>${l.tarief}</td>
+      <td><select class="statusSel" onchange="setStatus('${l.id}',this.value)">${opts}</select></td>
+    </tr>`;
+  }).join('');
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="6" style="color:var(--muted);padding:22px">Geen opdrachten gevonden met de huidige filters.</td></tr>'; }
+  renderStats(rows);
+}
+
+function renderStats(rows){
+  const all=active();
+  const strong=all.filter(l=>l.score>=75).length;
+  const won=all.filter(l=>(((state[l.id]&&state[l.id].status)||'nieuw')==='gewonnen')).length;
+  document.getElementById('stats').innerHTML=[
+    ['Actieve leads',all.length],
+    ['Getoond (na filter)',rows.length],
+    ['Sterke matches (≥75)',strong],
+    ['Gewonnen',won]
+  ].map(s=>`<div class="stat"><div class="n">${s[1]}</div><div class="l">${s[0]}</div></div>`).join('');
+}
+
+function sortBy(k){
+  if(sortKey===k){ sortDir*=-1; } else { sortKey=k; sortDir=(k==='score')?-1:1; }
+  document.querySelectorAll('th').forEach(th=>{
+    th.textContent=th.textContent.replace(/ [▲▼]$/,'');
+    const oc=th.getAttribute('onclick');
+    if(oc && oc.includes("'"+k+"'")) th.textContent += (sortDir<0?' ▼':' ▲');
+  });
+  render();
+}
+
+function resetF(){
+  document.getElementById('q').value='';
+  document.getElementById('fScore').value='0';
+  ['fRegio','fRol','fStatus','fBron'].forEach(id=>document.getElementById(id).value='');
+  render();
+}
+
+function exportCSV(){
+  const rows=current();
+  const cols=['score','titel','rol','opdrachtgever','bureau','locatie','regio','tarief','duur','uren','zzp','bron','deadline','url'];
+  const esc=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const csv=[cols.join(';')].concat(rows.map(l=>cols.map(c=>esc(l[c])).join(';'))).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='risguard-leads.csv'; a.click();
+}
+
+fillFilter('fRegio','regio',"Alle regio's");
+fillFilter('fRol','rol','Alle rollen');
+fillFilter('fBron','bron','Alle bronnen');
+render();
+</script>
+</body>
+</html>
