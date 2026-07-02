@@ -6,65 +6,98 @@
 <title>Risguard — Lead-sourcing dashboard</title>
 <style>
   :root{
-    --bg:#0f1729; --panel:#16203a; --panel2:#1d294a; --line:#2a3b63;
-    --text:#e8edf7; --muted:#93a3c4; --accent:#3da5ff; --accent2:#2d7cd6;
-    --green:#2fbf71; --amber:#f5a623; --red:#e3506b; --chip:#243457;
+    --bg:#0a1220; --panel:#111b2e; --panel2:#182742; --line:#25344f;
+    --text:#eef2f9; --muted:#8fa0c2; --muted-dim:#5d7096;
+    --navy:#0e2841; --blue:#3d7fe0; --blue-dim:#2a5aa3;
+    --orange:#f08b4f; --orange-dim:#c96a30;
+    --green:#34c780; --amber:#f0b429; --red:#f0637a; --chip:#1b2b48;
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:var(--bg);color:var(--text);font-size:14px;line-height:1.45}
-  header{padding:20px 26px;border-bottom:1px solid var(--line);background:var(--panel);
-    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
-  header h1{font-size:19px;margin:0;font-weight:650}
-  header .sub{color:var(--muted);font-size:12.5px;margin-top:3px}
-  .wrap{padding:18px 26px 60px}
-  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+    background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  header{padding:22px 28px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,var(--navy),#0c2136 90%);
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;
+    box-shadow:0 1px 0 rgba(61,127,224,.25)}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand img{height:26px;width:auto;display:block}
+  .brand-text h1{font-size:18px;margin:0;font-weight:700;letter-spacing:-.01em}
+  .brand-text .sub{color:var(--muted);font-size:12px;margin-top:4px}
+  .wrap{padding:22px 28px 60px;max-width:1400px;margin:0 auto}
+  .toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
   select,input[type=text]{background:var(--panel2);color:var(--text);border:1px solid var(--line);
-    border-radius:8px;padding:8px 11px;font-size:13px;outline:none}
-  input[type=text]{min-width:220px}
-  .btn{background:var(--accent2);color:#fff;border:none;border-radius:8px;padding:9px 14px;
-    font-size:13px;font-weight:600;cursor:pointer}
+    border-radius:8px;padding:8px 11px;font-size:13px;outline:none;transition:border-color .15s}
+  select:focus,input[type=text]:focus{border-color:var(--blue)}
+  input[type=text]{min-width:230px}
+  .btn{background:var(--blue-dim);color:#fff;border:none;border-radius:8px;padding:9px 15px;
+    font-size:13px;font-weight:600;cursor:pointer;transition:background .15s}
+  .btn:hover{background:var(--blue)}
   .btn.ghost{background:var(--chip);color:var(--text)}
-  .stats{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px}
-  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;min-width:120px}
-  .stat .n{font-size:22px;font-weight:700}
-  .stat .l{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em}
-  table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:12px;overflow:hidden}
-  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
-  th{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);cursor:pointer;user-select:none;white-space:nowrap}
+  .btn.ghost:hover{background:var(--panel2);outline:1px solid var(--line)}
+  .stats{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 18px;min-width:130px;
+    box-shadow:0 1px 2px rgba(0,0,0,.25)}
+  .stat .n{font-size:23px;font-weight:700;letter-spacing:-.01em}
+  .stat .l{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;font-size:11.5px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:9px;height:9px;border-radius:3px;display:inline-block}
+  .table-wrap{overflow-x:auto;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.28)}
+  table{width:100%;border-collapse:collapse;background:var(--panel);min-width:960px}
+  th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);cursor:pointer;
+    user-select:none;white-space:nowrap;position:sticky;top:0;background:var(--panel2);z-index:2}
   th:hover{color:var(--text)}
   tr:last-child td{border-bottom:none}
+  tr.row:nth-child(even){background:rgba(255,255,255,.012)}
   tr.row:hover{background:var(--panel2)}
-  .title{font-weight:600}
+  .title{font-weight:650;font-size:14.5px}
   .title a{color:var(--text);text-decoration:none}
-  .title a:hover{color:var(--accent)}
-  .meta{color:var(--muted);font-size:12px;margin-top:3px}
+  .title a:hover{color:var(--blue)}
+  .fitchip{display:inline-block;border-radius:20px;padding:1.5px 8px;font-size:10.5px;font-weight:600;
+    margin-left:7px;vertical-align:1px;white-space:nowrap}
+  .fit-audit{background:rgba(61,127,224,.18);color:#8fb8f5}
+  .fit-risk{background:rgba(52,199,128,.16);color:#7fe0ab}
+  .fit-technisch{background:rgba(240,139,79,.18);color:#f5ac7c}
+  .fit-overig{background:var(--chip);color:var(--muted)}
+  .meta{color:var(--muted);font-size:12px;margin-top:4px}
   .score{font-weight:700;font-size:15px;border-radius:8px;padding:3px 9px;display:inline-block;min-width:34px;text-align:center}
-  .s-hi{background:rgba(47,191,113,.16);color:#5fe39a}
-  .s-md{background:rgba(245,166,35,.16);color:#ffc56b}
-  .s-lo{background:rgba(227,80,107,.14);color:#ff8aa0}
+  .s-hi{background:rgba(52,199,128,.16);color:#5fe39a}
+  .s-md{background:rgba(240,180,41,.16);color:#ffc860}
+  .s-lo{background:rgba(240,99,122,.14);color:#ff8aa0}
   .chip{display:inline-block;background:var(--chip);border:1px solid var(--line);border-radius:20px;
     padding:2px 9px;font-size:11px;color:var(--muted);margin:2px 4px 0 0}
   .statusSel{font-size:12px;padding:5px 8px}
   .reden{color:var(--muted);font-size:12px;margin-top:5px;max-width:420px}
   .src{font-size:11px;color:var(--muted)}
-  .verify{color:var(--amber);font-size:11px;font-weight:600}
-  footer{color:var(--muted);font-size:11.5px;padding:0 26px 30px}
+  .verify{color:var(--orange);font-size:11px;font-weight:600;cursor:help;border-bottom:1px dotted var(--orange-dim)}
+  .tijdlijn{font-size:11.5px;color:var(--muted);white-space:nowrap}
+  .tijdlijn b{color:var(--text);font-weight:600}
+  .tijdlijn div{margin-bottom:2px}
+  footer{color:var(--muted);font-size:11.5px;padding:0 28px 32px;max-width:1400px;margin:0 auto}
   .hidden{display:none}
-  details summary{cursor:pointer;color:var(--accent);font-size:12px;margin-top:4px}
+  details summary{cursor:pointer;color:var(--blue);font-size:12px;margin-top:5px}
+  details summary:hover{color:#8fb8f5}
   /* --- Inlogpoort (client-side, niet-beveiligd: schrikt casual inzage af) --- */
   #gate{position:fixed;inset:0;z-index:9999;background:var(--bg);
     display:flex;align-items:center;justify-content:center;padding:20px}
   #gate .box{background:var(--panel);border:1px solid var(--line);border-radius:14px;
-    padding:30px 28px;width:100%;max-width:360px;text-align:center}
+    padding:32px 30px;width:100%;max-width:360px;text-align:center;
+    box-shadow:0 8px 28px rgba(0,0,0,.4);border-top:2px solid var(--blue)}
   #gate h2{margin:0 0 6px;font-size:18px}
   #gate p{color:var(--muted);font-size:12.5px;margin:0 0 18px}
   #gate input{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);
-    border-radius:8px;padding:11px 12px;font-size:14px;outline:none;margin-bottom:12px}
-  #gate input:focus{border-color:var(--accent)}
-  #gate .btn{width:100%;padding:11px}
+    border-radius:8px;padding:11px 12px;font-size:14px;outline:none;margin-bottom:12px;transition:border-color .15s}
+  #gate input:focus{border-color:var(--blue)}
+  #gate .btn{width:100%;padding:11px;background:var(--blue-dim)}
+  #gate .btn:hover{background:var(--blue)}
   #gate .err{color:var(--red);font-size:12px;min-height:16px;margin-top:10px}
   body.locked{overflow:hidden}
+  @media (max-width:640px){
+    header{padding:16px 18px}
+    .wrap{padding:16px 16px 44px}
+    footer{padding:0 16px 26px}
+  }
 </style>
 </head>
 <body class="locked">
@@ -79,9 +112,12 @@
   </div>
 </div>
 <header>
-  <div>
-    <h1>Risguard — Geautomatiseerd lead-sourcing dashboard</h1>
-    <div class="sub">Regio-scope: Zeeland, Zuid-Holland, Noord-Holland, Utrecht, Noord-Brabant, Gelderland • laatste run 1 juli 2026 (13:00)</div>
+  <div class="brand">
+    <img src="https://raw.githubusercontent.com/Toolkit-ISO/Risguard-ISO-toolkit/main/risguard-logo.png" alt="Risguard" onerror="this.style.display='none'">
+    <div class="brand-text">
+      <h1>Geautomatiseerd lead-sourcing dashboard</h1>
+      <div class="sub">Regio-scope: Zeeland, Zuid-Holland, Noord-Holland, Utrecht, Noord-Brabant, Gelderland • laatste run 1 juli 2026 (13:00)</div>
+    </div>
   </div>
   <div>
     <button class="btn ghost" onclick="exportCSV()">Export CSV</button>
@@ -91,12 +127,27 @@
 <div class="wrap">
   <div class="stats" id="stats"></div>
 
+  <div class="legend">
+    <span><i style="background:#8fb8f5"></i> IT Audit &amp; Assurance</span>
+    <span><i style="background:#7fe0ab"></i> IT Risk Consultancy</span>
+    <span><i style="background:#f5ac7c"></i> Technische security — buiten kernscope</span>
+    <span><i style="background:var(--muted)"></i> Overig / gemengd</span>
+    <span style="color:var(--orange)">⚠ bron ongeverifieerd — hover voor uitleg</span>
+  </div>
+
   <div class="toolbar">
     <input type="text" id="q" placeholder="Zoek op titel, opdrachtgever, trefwoord…" oninput="render()">
     <select id="fScore" onchange="render()">
       <option value="0">Alle scores</option>
       <option value="75">Score ≥ 75 (sterk)</option>
       <option value="50">Score ≥ 50</option>
+    </select>
+    <select id="fFit" onchange="render()">
+      <option value="">Alle types</option>
+      <option value="audit">IT Audit &amp; Assurance</option>
+      <option value="risk">IT Risk Consultancy</option>
+      <option value="technisch">Technische security</option>
+      <option value="overig">Overig / gemengd</option>
     </select>
     <select id="fRegio" onchange="render()"></select>
     <select id="fRol" onchange="render()"></select>
@@ -109,6 +160,7 @@
     <button class="btn ghost" onclick="resetF()">Reset</button>
   </div>
 
+  <div class="table-wrap">
   <table>
     <thead>
       <tr>
@@ -117,21 +169,23 @@
         <th onclick="sortBy('opdrachtgever')">Opdrachtgever / bureau</th>
         <th onclick="sortBy('locatie')">Locatie</th>
         <th onclick="sortBy('tarief')">Tarief</th>
+        <th onclick="sortBy('toegevoegd')">Tijdlijn</th>
         <th>Status</th>
       </tr>
     </thead>
     <tbody id="tbody"></tbody>
   </table>
+  </div>
 </div>
 
 <footer>
   Regio-filter actief: alleen Zeeland, Zuid-Holland, Noord-Holland, Utrecht, Noord-Brabant en Gelderland. Opdrachten buiten deze provincies worden uitgefilterd.<br>
-  Bronnen: it-contracts, freep, opdrachtoverheid, Circle8, Seven Stars, FixedToday (Flextender indirect via Opdracht Overheid).
-  Leads met <span class="verify">⚠ te verifiëren</span> komen uit zoekresultaten en moeten op open status gecontroleerd worden.
+  Bronnen: it-contracts, freep, opdrachtoverheid, Circle8, Seven Stars, FixedToday (Flextender indirect via Opdracht Overheid).<br>
+  <b>⚠ bron ongeverifieerd</b>: deze lead komt uit geautomatiseerde zoekresultaten. Regio, scope en of de opdracht nog daadwerkelijk open staat zijn niet onafhankelijk gecontroleerd — check dit zelf voordat je reageert.<br>
+  <b>Type</b>-label geeft aan hoe een opdracht zich verhoudt tot Risguards daadwerkelijke dienstverlening (IT Audit &amp; Assurance en IT Risk Consultancy, zie risguard.com) — het is een automatische indicatie op basis van de rol-omschrijving, geen herbeoordeling van de score.<br>
   Statuswijzigingen worden lokaal in je browser bewaard.<br>
-  Gesloten opdrachten (deadline vóór vandaag) worden niet getoond en bij elke run uit de lijst verwijderd; een opdracht die vandaag sluit telt nog als open. De deadline staat bij elke opdracht vermeld.
+  Gesloten opdrachten (deadline vóór vandaag) worden niet getoond en bij elke run uit de lijst verwijderd; een opdracht die vandaag sluit telt nog als open.
 </footer>
-
 <script>
 /* ============================================================
    INLOGPOORT (simpel, client-side)
@@ -177,6 +231,35 @@ const LEADS = [
  {id:"tenderned-surf-cumulus-privacy-infobeveiliging", titel:"SURF Cumulus Professional Services (privacy/informatiebeveiliging cloud)", rol:"Privacy / Informatiebeveiliging advies (cloud)", opdrachtgever:"SURF", bureau:"-", locatie:"Utrecht", regio:"Utrecht", tarief:"onbekend", duur:"onbekend", uren:"-", zzp:"onbekend", bron:"TenderNed", url:"https://www.tenderned.nl/aankondigingen/overzicht/406331", geplaatst:"onbekend", deadline:"2026-12-22", score:60, verify:true, reden:"Professional services rond privacy en informatiebeveiliging in cloudcontext (SURF Cumulus) - relevante adviesmatch. Regio Utrecht, deadline 22-12-2026.", oms:"SURF vraagt professional services uit binnen het Cumulus-programma op het gebied van privacy en informatiebeveiliging in de cloud."},
  {id:"tenderned-radboud-continuity-das", titel:"DAS Continuity Management & Disaster Recovery", rol:"BCM / Continuity management (DAS)", opdrachtgever:"Radboud Universiteit", bureau:"-", locatie:"Nijmegen", regio:"Gelderland", tarief:"onbekend", duur:"doorlopend (DAS)", uren:"-", zzp:"onbekend", bron:"TenderNed", url:"https://www.tenderned.nl/aankondigingen/overzicht/430418", geplaatst:"onbekend", deadline:"2034-06-25", score:55, verify:true, reden:"DAS-perceel Continuity Management & Disaster Recovery bij Radboud Universiteit - BCM/risicomanagementmatch, doorlopend open. Regio Gelderland.", oms:"DAS-perceel van Radboud Universiteit voor continuity management en disaster recovery diensten."}
 ];
+/* ============================================================
+   TOEGEVOEGD-datum
+   Leads krijgen bij eerste run de RUN_DATE als 'toegevoegd'.
+   Zet bij nieuwe leads in een volgende run een eigen toegevoegd:"YYYY-MM-DD"
+   in het object hierboven — dan blijft de datum van bestaande leads
+   ongewijzigd en klopt 'toegevoegd' voor nieuwe leads exact.
+   ============================================================ */
+const RUN_DATE = '2026-07-01';
+LEADS.forEach(l=>{ if(!l.toegevoegd) l.toegevoegd = RUN_DATE; });
+
+/* ============================================================
+   TYPE-classificatie t.o.v. Risguards daadwerkelijke diensten
+   (IT Audit & Assurance / IT Risk Consultancy, zie risguard.com).
+   Simpele keyword-heuristiek op de rol-omschrijving — geen
+   herbeoordeling van de score, puur een visuele indicatie.
+   ============================================================ */
+const FIT_LABEL = {
+  audit:'IT Audit & Assurance',
+  risk:'IT Risk Consultancy',
+  technisch:'Technische security (buiten kernscope)',
+  overig:'Overig / gemengd'
+};
+function fitCategory(rol){
+  const r = (rol||'').toLowerCase();
+  if(/audit|isae|digid|soc\s?2|ensia|nen\s?7510|tisax|iso\s?27001|assurance/.test(r)) return 'audit';
+  if(/pentest|siem|\bsoc\b|mdr|iam|sap security|incident|csirt|developer|engineering|ontwerper|cybersecurity|architect/.test(r)) return 'technisch';
+  if(/risk|risico|bcm|continuity|crisis|compliance|governance|ciso|privacy|consultancy/.test(r)) return 'risk';
+  return 'overig';
+}
 
 const STORE='risguard_leads_v1';
 let state = loadState();
@@ -210,6 +293,7 @@ function fillFilter(id,key,label){
 function current(){
   const q=document.getElementById('q').value.toLowerCase();
   const ms=+document.getElementById('fScore').value;
+  const ff=document.getElementById('fFit').value;
   const fr=document.getElementById('fRegio').value;
   const fro=document.getElementById('fRol').value;
   const fst=document.getElementById('fStatus').value;
@@ -219,6 +303,7 @@ function current(){
     const st=(state[l.id]&&state[l.id].status)||'nieuw';
     if(q && !(l.titel+l.opdrachtgever+l.oms+l.reden+l.rol).toLowerCase().includes(q)) return false;
     if(l.score<ms) return false;
+    if(ff && fitCategory(l.rol)!==ff) return false;
     if(fr && l.regio!==fr) return false;
     if(fro && l.rol!==fro) return false;
     if(fst && st!==fst) return false;
@@ -240,12 +325,14 @@ function render(){
     const st=(state[l.id]&&state[l.id].status)||'nieuw';
     const opts=['nieuw','bekeken','benaderd','afgewezen','gewonnen']
       .map(o=>`<option ${o===st?'selected':''}>${o}</option>`).join('');
+    const fit=fitCategory(l.rol);
     return `<tr class="row">
       <td><span class="score ${scoreClass(l.score)}">${l.score}</span></td>
       <td>
         <div class="title"><a href="${l.url}" target="_blank">${l.titel}</a></div>
-        <div class="meta">${l.rol} • ${l.uren&&l.uren!=='-'?l.uren+' u/wk • ':''}${l.duur} • ${l.zzp}${l.deadline?' • deadline '+fmtDate(l.deadline):''}</div>
-        ${l.verify?'<span class="verify">⚠ status te verifiëren</span>':''}
+        <div class="meta">${l.rol}<span class="fitchip fit-${fit}">${FIT_LABEL[fit]}</span></div>
+        <div class="meta">${l.uren&&l.uren!=='-'?l.uren+' u/wk • ':''}${l.duur} • ${l.zzp}</div>
+        ${l.verify?`<span class="verify" title="Afkomstig uit geautomatiseerde zoekresultaten — regio, scope en of de opdracht nog open is zijn niet onafhankelijk gecontroleerd. Check dit voor je reageert.">⚠ bron ongeverifieerd</span>`:''}
         <details><summary>waarom past dit?</summary>
           <div class="reden"><b>Score-onderbouwing:</b> ${l.reden}<br><br>${l.oms}</div>
         </details>
@@ -253,10 +340,15 @@ function render(){
       <td>${l.opdrachtgever}<div class="src">via ${l.bureau} • bron: ${l.bron}</div></td>
       <td>${l.locatie}<div class="src">${l.regio}</div></td>
       <td>${l.tarief}</td>
+      <td class="tijdlijn">
+        <div>Toegevoegd: <b>${fmtDate(l.toegevoegd)}</b></div>
+        <div>Gepubliceerd: <b>${l.geplaatst||'onbekend'}</b></div>
+        <div>Deadline: <b>${l.deadline?fmtDate(l.deadline):'—'}</b></div>
+      </td>
       <td><select class="statusSel" onchange="setStatus('${l.id}',this.value)">${opts}</select></td>
     </tr>`;
   }).join('');
-  if(!rows.length){ tb.innerHTML='<tr><td colspan="6" style="color:var(--muted);padding:22px">Geen opdrachten gevonden met de huidige filters.</td></tr>'; }
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="7" style="color:var(--muted);padding:22px">Geen opdrachten gevonden met de huidige filters.</td></tr>'; }
   renderStats(rows);
 }
 
@@ -285,13 +377,13 @@ function sortBy(k){
 function resetF(){
   document.getElementById('q').value='';
   document.getElementById('fScore').value='0';
-  ['fRegio','fRol','fStatus','fBron'].forEach(id=>document.getElementById(id).value='');
+  ['fFit','fRegio','fRol','fStatus','fBron'].forEach(id=>document.getElementById(id).value='');
   render();
 }
 
 function exportCSV(){
   const rows=current();
-  const cols=['score','titel','rol','opdrachtgever','bureau','locatie','regio','tarief','duur','uren','zzp','bron','deadline','url'];
+  const cols=['score','titel','rol','opdrachtgever','bureau','locatie','regio','tarief','duur','uren','zzp','bron','toegevoegd','geplaatst','deadline','url'];
   const esc=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
   const csv=[cols.join(';')].concat(rows.map(l=>cols.map(c=>esc(l[c])).join(';'))).join('\n');
   const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
